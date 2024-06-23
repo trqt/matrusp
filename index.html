@@ -88,7 +88,7 @@
 	}(document, 'script', 'facebook-jssdk'));</script>
 <header id="header">
 <div id="header-content">
-    <div id="logo-wrapper"><span id="logo">Matrusp do povo 🐫</span><span class="beta-tag-wrapper"><span class="beta-tag">Yeah</span></span></div>
+    <div id="logo-wrapper"><span id="logo">Matrusp do povo</span><span class="beta-tag-wrapper"><span class="beta-tag">Yeah</span></span></div>
     <div id='save-controller'>
 	<input id='user-identifier' placeholder='Salve seu plano aqui'> 
 	<button id='save-button' class='header-button'>Salvar</button>
@@ -187,11 +187,12 @@
 			<div id="search-result-box"></div>
 			</div>
 			<div id="accordion-window">
-				<div class="plan-placeholder">
-					<div class="fas fa-crow placeholder-icon"></div>
+				<div class="plan-placeholder" style="display: flex; justify-content: center; align-items: center; flex-direction: column;">
+					<img src="images/camel-logo-vector.svg" style="max-width: 20%;" alt="Camelo" class="placeholder-icon">
 					<div class="placeholder-title">Parece vazio aqui...</div>
-					<div class="placeholder-body">Procure disciplinas na <button class='inline-button' onclick='searchBox.searchBox.focus()'>barra acima</button> ou<br /><button onclick='courseBox.open()'>carregue a grade do seu curso</button></div>
-				</div>
+					<div class="placeholder-body">Procure disciplinas na <button class='inline-button' onclick='searchBox.searchBox.focus()'>barra acima</button> ou<br><button onclick='courseBox.open()'>carregue a grade do seu curso</button></div>
+			  </div>
+			  
 				<div id="accordion"></div>
 			</div>
 			<div id="plans-wrapper">
@@ -211,6 +212,7 @@
     </div>
 	<footer>
 		<div id="footer-links">
+			<p>O matrusp de verdade está desatualizado. Esse tá atualizado. Aqui só tem as matérias da usp são carlos, por enquanto.</p>
 			<a href="https://github.com/toxicologist/matrusp/">Link do github</a><br/>
 			<p>גפזג</p>
 		</div>
