@@ -6,3 +6,4 @@ styles/.sass-cache/*
 .idea
 *.log
 *.lock
+.venv
