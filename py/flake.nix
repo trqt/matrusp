@@ -1,5 +1,5 @@
 {
-  description = "Python development environment with NumPy";
+  description = "Scripts MatrUSP";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -26,7 +26,6 @@
           ];
 
           shellHook = ''
-            echo "Python development environment with NumPy activated"
             echo "Python version: $(python3 --version)"
           '';
         };
