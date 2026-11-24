@@ -17,19 +17,35 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
+      - name: Set up Node 26
+        uses: actions/setup-node@v6
+        with:
+          node-version: '26'
+
       - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@v12
+        uses: DeterminateSystems/nix-installer-action@v23
 
       - name: Enable Nix cache
-        uses: DeterminateSystems/magic-nix-cache-action@v7
+        uses: DeterminateSystems/magic-nix-cache-action@v15
 
       - name: Update db/
         run: |
           nix develop ./py -c bash -lc 'python3 py/parse_usp.py -- db/'
+
+      - name: Check db.json
+        run: |
+          python3 - <<'PY'
+          import json
+          with open('db/db.json', encoding='utf-8') as f:
+              materias = json.load(f)
+          if not isinstance(materias, list) or not materias:
+              raise SystemExit('db/db.json is empty; refusing to commit')
+          print(f'db/db.json: {len(materias)} materias')
+          PY
 
       - name: Commit and push changes (if any)
         run: |

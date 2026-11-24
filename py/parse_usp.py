@@ -19,6 +19,8 @@ import argparse
 import time
 import logging
 import gzip
+import shutil
+import tempfile
 from multi_key_dict import multi_key_dict
 from typing import Dict, List, Tuple, Any, Optional
 from dataclasses import dataclass
@@ -65,15 +67,21 @@ async def main() -> int:
                 campi[campus].append(unidade)
 
         campi_json = json.dumps(campi)
-        
+
         db_path = Path(args.db_dir)
         db_path.mkdir(parents=True, exist_ok=True)
-        
-        campi_file = db_path / 'campi.json'
+
+        # Gravar tudo em um diretorio temporario primeiro. O db/ so e
+        # substituido depois que o resultado for validado, para uma raspagem
+        # vazia (JupiterWeb sem oferecimentos) nao apagar os dados existentes.
+        staging_path = Path(tempfile.mkdtemp(prefix='matrusp-db-'))
+        args.output_dir = staging_path
+
+        campi_file = staging_path / 'campi.json'
         campi_file.write_text(campi_json)
 
         if not args.nogzip:
-                with gzip.open(db_path / 'campi.json.gz', 'wb') as f:
+                with gzip.open(staging_path / 'campi.json.gz', 'wb') as f:
                     f.write(campi_json.encode('utf-8'))
 
         logger.info(f" - {len(codigos_unidades)} unidades de ensino encontradas - ")
@@ -83,19 +91,41 @@ async def main() -> int:
 
         # Salvar em arquivo json
         materias_json = json.dumps(materias)
-        
+
+        # Uma raspagem vazia ou muito menor que o banco atual indica falha
+        # no JupiterWeb (por exemplo, nenhum oferecimento publicado).
+        # Nesse caso, nao alterar db/ e abortar com erro.
         output_file = db_path / args.out
-        output_file.write_text(materias_json)
+        previous_count = 0
+        if output_file.exists():
+                try:
+                        previous_count = len(json.loads(output_file.read_text(encoding='utf-8')))
+                except (OSError, ValueError, TypeError):
+                        previous_count = 0
 
-        if not args.nogzip:
-                with gzip.open(output_file.with_suffix('.json.gz'), 'wb') as f:
-                    f.write(materias_json.encode('utf-8'))
+        sucesso = False
+        try:
+                if not materias:
+                        logger.error(" - Nenhuma disciplina com turmas validas encontrada no JupiterWeb. db/ nao sera alterado")
+                elif previous_count and len(materias) < previous_count / 2:
+                        logger.error(f" - Apenas {len(materias)} disciplinas encontradas contra {previous_count} no banco atual. db/ nao sera alterado")
+                else:
+                        (staging_path / args.out).write_text(materias_json)
+                        if not args.nogzip:
+                                with gzip.open((staging_path / args.out).with_suffix('.json.gz'), 'wb') as f:
+                                    f.write(materias_json.encode('utf-8'))
 
-        logger.info(f" -   {len(materias)} materias salvas")
+                        for arquivo in staging_path.iterdir():
+                                shutil.copy2(arquivo, db_path / arquivo.name)
+
+                        logger.info(f" -   {len(materias)} materias salvas")
+                        sucesso = True
+        finally:
+                shutil.rmtree(staging_path, ignore_errors=True)
 
         logger.info(" - FIM! -")
         logger.info(f" - \n - Tempo de execução: {time.perf_counter() - t:.2f} segundos")
-        return 0
+        return 0 if sucesso else 1
 
 async def iterar_unidades(codigos_unidades: List[str]) -> List[Dict[str, Any]]:
         # Sessão HTTP global utilizada por todas as iterações
@@ -218,12 +248,12 @@ async def parsear_materia(materia: Tuple[str, str]) -> Optional[Dict[str, Any]]:
 
                 materia_json = json.dumps(materia_info)
                 
-                db_path = Path(args.db_dir)
-                json_file = db_path / f"{codigo}.json"
+                output_dir = Path(args.output_dir)
+                json_file = output_dir / f"{codigo}.json"
                 json_file.write_text(materia_json)
 
                 if not args.nogzip:
-                        with gzip.open(db_path / f"{codigo}.json.gz", 'wb') as f:
+                        with gzip.open(output_dir / f"{codigo}.json.gz", 'wb') as f:
                             f.write(materia_json.encode('utf-8'))
 
                 return materia_info
